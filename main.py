@@ -84,7 +84,7 @@ def main():
         mav.mav.request_data_stream_send(
             mav.target_system,
             mav.target_component,
-            mav.mavlink.MAV_DATA_STREAM_ALL,  # Request all data
+            mavutil.mavlink.MAV_DATA_STREAM_ALL,  # Request all data
             4,  # 4 Hz
             1   # Start sending
         )
