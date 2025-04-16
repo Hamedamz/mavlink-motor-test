@@ -1,2 +1,2 @@
 pymavlink==2.4.43
-serial
+pyserial
