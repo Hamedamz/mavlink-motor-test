@@ -52,17 +52,17 @@ def disarm_vehicle(mav):
 
 def main():
     parser = argparse.ArgumentParser(description="Motor test script using MAVLink")
-    parser.add_argument('--device', type=str, required=True, help='MAVLink device path, e.g., /dev/serial0 or udp:14550')
-    parser.add_argument('--baudrate', type=int, default=115200, help='Baud rate for serial connection (default: 115200)')
+    parser.add_argument('--device', type=str, required=True, help='MAVLink device path, e.g., /dev/ttyAMA0 or udp:14550')
+    parser.add_argument('--baudrate', type=int, default=57600, help='Baud rate for serial connection (default: 57600)')
     parser.add_argument('--motors', type=int, nargs='+', required=True, help='Motor indices to spin (0-based). Example: --motors 0 2 3')
-    parser.add_argument('--throttle_type', type=int, choices=[0, 1, 2, 3], default=0, help='Throttle type: 0=Percentage 0-100m, 1=PWM 1000-2000')
+    parser.add_argument('--throttle_type', type=int, choices=[0, 1], default=0, help='Throttle type: 0=Percentage 0-100m, 1=PWM 1000-2000')
     parser.add_argument('--throttle_value', type=float, default=10, help='Throttle value: 0 to 100 (for type 0), 1000-2000 (for type 1)')
     parser.add_argument('--duration', type=int, default=10, help='Test duration in seconds')
-    parser.add_argument('--voltage_threshold', type=float, default=10.5, help='Minimum safe voltage to continue test (V)')
+    parser.add_argument('--voltage_threshold', type=float, default=6.6, help='Minimum safe voltage to continue test (V), 6.6 for 2S, 10.5 for 3S, and 14 for 4S is recommended.')
     parser.add_argument('--log', type=str, default='log.csv', help='Output log file (CSV)')
 
     args = parser.parse_args()
-    log_path = f"M{'_'.join([str(m) for m in args.motors])}_T{args.throttle_value*100:.0f}_{args.log}"
+    log_path = f"M{'_'.join([str(m) for m in args.motors])}_T{args.throttle_value:.0f}_{args.log}"
 
     print("Connecting to vehicle...")
     mav = mavutil.mavlink_connection(args.device, baud=args.baudrate)
@@ -96,7 +96,7 @@ def main():
 
     #arm_vehicle(mav)
     
-    print(f"Spinning motors {args.motors} at {args.throttle_value * 100:.0f}% throttle for {args.duration}s each")
+    print(f"Spinning motors {args.motors} at {args.throttle_value}% throttle for {args.duration}s each")
     start = time.perf_counter()
 
     for motor in args.motors:
@@ -110,7 +110,7 @@ def main():
             if elapsed >= args.duration:
                 break
 
-            msg = mav.recv_match(type=['BATTERY_STATUS', 'RPM'], blocking=True, timeout=1)
+            msg = mav.recv_match(type=['BATTERY_STATUS'], blocking=True, timeout=1)
             voltage = current = rpm = 'N/A'
 
             if msg:
@@ -121,15 +121,12 @@ def main():
 
                     if isinstance(voltage, float) and voltage < args.voltage_threshold:
                         stop_all_motors(mav, args.motors)
-                        log.write(f"{elapsed:.2f},{voltage},{current},STOPPED\n")
+                        log.write(f"{elapsed:.2f},{voltage},{current}\n")
                         print(f"{elapsed:.2f}s | Voltage {voltage:.2f}V dropped below threshold {args.voltage_threshold}V")
                         return
 
-                elif msg.get_type() == 'RPM':
-                    rpm = msg.rpm[0]
-
             print(f"{elapsed:.2f}s | V: {voltage} V | I: {current} A | RPM: {rpm}")
-            log.write(f"{elapsed:.2f},{voltage},{current},{rpm}\n")
+            log.write(f"{elapsed:.2f},{voltage},{current}\n")
 
     print(f"✅ Test complete. Log saved to {log_path}")
     #disarm_vehicle(mav)
