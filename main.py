@@ -130,7 +130,7 @@ def main():
 
         while True:
             elapsed = time.perf_counter() - start
-            elapsed_send = time.pref_counter() - last_send
+            elapsed_send = time.perf_counter() - last_send
 
             if elapsed >= args.duration:
                 break
@@ -138,7 +138,7 @@ def main():
                 for motor in args.motors:
                     send_motor_test(mav, motor, args.throttle_type, args.throttle_value, args.duration)
 
-                last_send = time.pref_counter()
+                last_send = time.perf_counter()
 
             msg = mav.recv_match(type=['BATTERY_STATUS'], blocking=True, timeout=1)
             voltage = current = rpm = 'N/A'
