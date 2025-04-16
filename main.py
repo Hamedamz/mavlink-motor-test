@@ -115,22 +115,30 @@ def main():
     print("Waiting for system initialization...")
     time.sleep(3)
 
-    arm_vehicle(mav)
+    # arm_vehicle(mav)
     
     print(f"Spinning motors {args.motors} at {args.throttle_value}% throttle for {args.duration}s each")
     start = time.perf_counter()
+    last_send = start
 
     for motor in args.motors:
-        # send_motor_test(mav, motor, args.throttle_type, args.throttle_value, args.duration)
-        send_motor_thrust(mav, motor, args.throttle_type, args.throttle_value)
+        send_motor_test(mav, motor, args.throttle_type, args.throttle_value, args.duration)
+        # send_motor_thrust(mav, motor, args.throttle_type, args.throttle_value)
 
     with open(log_path, "w") as log:
         log.write("Time(s),Voltage(V),Current(A),RPM\n")
 
         while True:
             elapsed = time.perf_counter() - start
+            elapsed_send = time.pref_counter() - last_send
+
             if elapsed >= args.duration:
                 break
+            if elapsed_send > 590:
+                for motor in args.motors:
+                    send_motor_test(mav, motor, args.throttle_type, args.throttle_value, args.duration)
+
+                last_send = time.pref_counter()
 
             msg = mav.recv_match(type=['BATTERY_STATUS'], blocking=True, timeout=1)
             voltage = current = rpm = 'N/A'
@@ -143,7 +151,7 @@ def main():
 
                     if isinstance(voltage, float) and voltage < args.voltage_threshold:
                         stop_all_motors(mav, args.motors)
-                        disarm_vehicle(mav)
+                        # disarm_vehicle(mav)
                         log.write(f"{elapsed:.2f},{voltage},{current}\n")
                         print(f"{elapsed:.2f}s | Voltage {voltage:.2f}V dropped below threshold {args.voltage_threshold}V")
                         return
@@ -152,7 +160,7 @@ def main():
             log.write(f"{elapsed:.2f},{voltage},{current}\n")
 
     print(f"✅ Test complete. Log saved to {log_path}")
-    disarm_vehicle(mav)
+    # disarm_vehicle(mav)
 
 if __name__ == "__main__":
     main()
