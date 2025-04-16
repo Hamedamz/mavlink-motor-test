@@ -3,6 +3,10 @@ import time
 from pymavlink import mavutil
 
 
+pwm_min = 1000
+pwm_max = 2000
+
+
 def send_motor_test(mav, motor_index, throttle_type, throttle_value, duration):
     mav.mav.command_long_send(
         mav.target_system,
@@ -14,6 +18,23 @@ def send_motor_test(mav, motor_index, throttle_type, throttle_value, duration):
         throttle_value,         # param3: throttle value
         duration,               # param4: timeout (seconds)
         0, 0, 0                 # param5-7: unused
+    )
+
+
+def send_motor_thrust(mav, motor_index, throttle_type, throttle_value):
+    if throttle_type == 0:
+        pwm_value = pwm_min + (pwm_max - pwm_min) * 0.01 * throttle_value
+    elif throttle_type == 1:
+        pwm_value = min(max(throttle_value, pwm_min), pwm_max)
+
+    mav.mav.command_long_send(
+        mav.target_system,
+        mav.target_component,
+        mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+        0,
+        motor_index,     # param1: servo output number
+        pwm_value,         # param2: PWM in microseconds
+        0, 0, 0, 0, 0
     )
 
 
@@ -100,7 +121,8 @@ def main():
     start = time.perf_counter()
 
     for motor in args.motors:
-        send_motor_test(mav, motor, args.throttle_type, args.throttle_value, args.duration)
+        # send_motor_test(mav, motor, args.throttle_type, args.throttle_value, args.duration)
+        send_motor_thrust(mav, motor, args.throttle_type, args.throttle_value)
 
     with open(log_path, "w") as log:
         log.write("Time(s),Voltage(V),Current(A),RPM\n")
