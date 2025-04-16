@@ -55,8 +55,8 @@ def main():
     parser.add_argument('--device', type=str, required=True, help='MAVLink device path, e.g., /dev/serial0 or udp:14550')
     parser.add_argument('--baudrate', type=int, default=115200, help='Baud rate for serial connection (default: 115200)')
     parser.add_argument('--motors', type=int, nargs='+', required=True, help='Motor indices to spin (0-based). Example: --motors 0 2 3')
-    parser.add_argument('--throttle_type', type=int, choices=[0, 1, 2, 3], default=2, help='Throttle type: 0=PWM, 1=Pilot %, 2=Throttle %, 3=RPM')
-    parser.add_argument('--throttle_value', type=float, default=0.2, help='Throttle value: 0.0 to 1.0 (for % types)')
+    parser.add_argument('--throttle_type', type=int, choices=[0, 1, 2, 3], default=0, help='Throttle type: 0=Percentage 0-100m, 1=PWM 1000-2000')
+    parser.add_argument('--throttle_value', type=float, default=10, help='Throttle value: 0 to 100 (for type 0), 1000-2000 (for type 1)')
     parser.add_argument('--duration', type=int, default=10, help='Test duration in seconds')
     parser.add_argument('--voltage_threshold', type=float, default=10.5, help='Minimum safe voltage to continue test (V)')
     parser.add_argument('--log', type=str, default='log.csv', help='Output log file (CSV)')
@@ -68,6 +68,31 @@ def main():
     mav = mavutil.mavlink_connection(args.device, baud=args.baudrate)
     mav.wait_heartbeat()
     print("Connected. System ID:", mav.target_system)
+
+    # Request parameter list (similar to what QGC does)
+    print("Requesting parameters...")
+    mav.mav.param_request_list_send(
+        mav.target_system, mav.target_component
+    )
+    
+    # Wait briefly for parameters to start coming in
+    time.sleep(2)
+    
+    # Set up data streams - request regular data from the autopilot
+    print("Setting up data streams...")
+    for i in range(0, 3):  # Try a few times to make sure it gets through
+        mav.mav.request_data_stream_send(
+            mav.target_system,
+            mav.target_component,
+            mav.mavlink.MAV_DATA_STREAM_ALL,  # Request all data
+            4,  # 4 Hz
+            1   # Start sending
+        )
+        time.sleep(0.5)
+    
+    # Give the system time to process the commands and stabilize
+    print("Waiting for system initialization...")
+    time.sleep(3)
 
     #arm_vehicle(mav)
     
