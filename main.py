@@ -69,7 +69,7 @@ def main():
     mav.wait_heartbeat()
     print("Connected. System ID:", mav.target_system)
 
-    arm_vehicle(mav)
+    #arm_vehicle(mav)
     
     print(f"Spinning motors {args.motors} at {args.throttle_value * 100:.0f}% throttle for {args.duration}s each")
     start = time.perf_counter()
@@ -107,7 +107,7 @@ def main():
             log.write(f"{elapsed:.2f},{voltage},{current},{rpm}\n")
 
     print(f"✅ Test complete. Log saved to {log_path}")
-    disarm_vehicle(mav)
+    #disarm_vehicle(mav)
 
 if __name__ == "__main__":
     main()
