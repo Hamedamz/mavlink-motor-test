@@ -24,6 +24,32 @@ def stop_all_motors(mav, motor_indices):
     print("✅ Motors stopped.")
 
 
+def arm_vehicle(mav):
+    print("[INFO] Arming vehicle...")
+    mav.mav.command_long_send(
+        mav.target_system,
+        mav.target_component,
+        mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+        0,
+        1, 0, 0, 0, 0, 0, 0
+    )
+    mav.recv_match(type='COMMAND_ACK', blocking=True)
+    print("[INFO] Armed.")
+
+
+def disarm_vehicle(mav):
+    print("[INFO] Disarming vehicle...")
+    mav.mav.command_long_send(
+        mav.target_system,
+        mav.target_component,
+        mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+        0,
+        0, 0, 0, 0, 0, 0, 0
+    )
+    mav.recv_match(type='COMMAND_ACK', blocking=True)
+    print("[INFO] Disarmed.")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Motor test script using MAVLink")
     parser.add_argument('--device', type=str, required=True, help='MAVLink device path, e.g., /dev/serial0 or udp:14550')
@@ -43,6 +69,8 @@ def main():
     mav.wait_heartbeat()
     print("Connected. System ID:", mav.target_system)
 
+    arm_vehicle(mav)
+    
     print(f"Spinning motors {args.motors} at {args.throttle_value * 100:.0f}% throttle for {args.duration}s each")
     start = time.perf_counter()
 
@@ -79,6 +107,7 @@ def main():
             log.write(f"{elapsed:.2f},{voltage},{current},{rpm}\n")
 
     print(f"✅ Test complete. Log saved to {log_path}")
+    disarm_vehicle(mav)
 
 if __name__ == "__main__":
     main()
