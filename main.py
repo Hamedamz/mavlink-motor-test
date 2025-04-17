@@ -156,7 +156,7 @@ def main():
                         print(f"{elapsed:.2f}s | Voltage {voltage:.2f}V dropped below threshold {args.voltage_threshold}V")
                         return
 
-            print(f"{elapsed:.2f}s | V: {voltage} V | I: {current} A | RPM: {rpm}")
+            print(f"{elapsed:.2f}s | V: {voltage} V | I: {current} A")
             log.write(f"{elapsed:.2f},{voltage},{current}\n")
 
     print(f"✅ Test complete. Log saved to {log_path}")
